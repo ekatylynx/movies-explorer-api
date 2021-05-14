@@ -1,0 +1,108 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const User = require('../models/user');
+const NotFoundError = require('../errors/not-found-err');
+const DuplicateError = require('../errors/duplicate-err');
+const ForbiddenError = require('../errors/forbidden-err');
+
+const { JWT_SECRET = 'some-secret-key' } = process.env;
+
+// Поиск всех юзеров
+// module.exports.getUsers = (req, res, next) => {
+//   User.find({})
+//     .then((user) => res.send({ data: user }))
+//     .catch(next);
+// };
+
+// Создание пользователя
+module.exports.createUser = (req, res, next) => {
+  const {
+    email,
+    password,
+    name,
+    about,
+    avatar,
+  } = req.body;
+
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      email,
+      password: hash,
+      name,
+      about,
+      avatar,
+    }))
+    .then((user) => res.send({
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      about: user.about,
+      avatar: user.avatar,
+    }))
+    .catch((err) => {
+      if (err.name === 'MongoError' || err.code === 11000) {
+        throw new DuplicateError('Пользователь с таким email уже существует');
+      }
+    })
+    .catch(next);
+};
+
+// Авторизация
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Нет пользователя с таким id');
+      }
+      // аутентификация успешна! пользователь в переменной user
+      const token = jwt.sign(
+        { _id: user._id },
+        JWT_SECRET,
+        { expiresIn: '7d' },
+      );
+      // вернём токен
+      res.send({ token });
+    })
+    .catch(next);
+};
+
+// Обновить инфу о нас
+module.exports.updateUser = (req, res, next) => {
+  const { name, about } = req.body;
+
+  // Чтобы обновлять одно из значений без null другого
+  const objForUpdate = {};
+  if (name) objForUpdate.name = name;
+  if (about) objForUpdate.about = about;
+
+  User.findByIdAndUpdate(req.user._id, objForUpdate, { new: true })
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Нет пользователя с таким id');
+      }
+
+      res.status(200).send(user);
+    })
+    .catch((err) => {
+      if (err.name === 'CastError' || err.name === 'ValidationError') {
+        throw new ForbiddenError('Переданы некорректные данные');
+      }
+    })
+    .catch(next);
+};
+
+// Получение информации о нас
+module.exports.getUser = (req, res, next) => {
+  User.findById(req.user._id)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Нет пользователя с таким id');
+      }
+
+      res.status(200).send(user);
+    })
+    .catch(next);
+};
