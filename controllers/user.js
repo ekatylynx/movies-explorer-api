@@ -8,21 +8,12 @@ const ForbiddenError = require('../errors/forbidden-err');
 
 const { JWT_SECRET = 'some-secret-key' } = process.env;
 
-// Поиск всех юзеров
-// module.exports.getUsers = (req, res, next) => {
-//   User.find({})
-//     .then((user) => res.send({ data: user }))
-//     .catch(next);
-// };
-
 // Создание пользователя
 module.exports.createUser = (req, res, next) => {
   const {
     email,
     password,
     name,
-    about,
-    avatar,
   } = req.body;
 
   bcrypt.hash(password, 10)
@@ -30,15 +21,11 @@ module.exports.createUser = (req, res, next) => {
       email,
       password: hash,
       name,
-      about,
-      avatar,
     }))
     .then((user) => res.send({
       _id: user._id,
       email: user.email,
       name: user.name,
-      about: user.about,
-      avatar: user.avatar,
     }))
     .catch((err) => {
       if (err.name === 'MongoError' || err.code === 11000) {
@@ -71,12 +58,11 @@ module.exports.login = (req, res, next) => {
 
 // Обновить инфу о нас
 module.exports.updateUser = (req, res, next) => {
-  const { name, about } = req.body;
+  const { name } = req.body;
 
   // Чтобы обновлять одно из значений без null другого
   const objForUpdate = {};
   if (name) objForUpdate.name = name;
-  if (about) objForUpdate.about = about;
 
   User.findByIdAndUpdate(req.user._id, objForUpdate, { new: true })
     .then((user) => {
