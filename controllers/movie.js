@@ -40,7 +40,7 @@ module.exports.createMovie = (req, res, next) => {
 // Удаление видео
 
 module.exports.deleteMovie = (req, res, next) => {
-  Movie.findById(req.params.movieId)
+  Movie.findOne({ movieId: req.params.movieId })
     .then((movie) => {
       if (!movie) {
         throw new NotFoundError('Нет карточки с таким id');
@@ -50,7 +50,7 @@ module.exports.deleteMovie = (req, res, next) => {
         throw new ForbiddenError('Нет прав на удаление карточки');
       }
 
-      Movie.findByIdAndDelete(req.params.movieId)
+      Movie.findByIdAndDelete(movie._id)
         .then((data) => {
           res.send({ message: 'Карточка успешно удалена' });
         })
