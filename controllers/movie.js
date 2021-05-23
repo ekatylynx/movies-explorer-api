@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Movie = require('../models/movie');
 const NotFoundError = require('../errors/not-found-err');
 const ForbiddenError = require('../errors/forbidden-err');
@@ -28,7 +29,7 @@ module.exports.createMovie = (req, res, next) => {
     image,
     trailer,
     thumbnail,
-    owner: req.user._id, // используем req.user
+    owner: mongoose.Types.ObjectId(req.user._id), // используем req.user
     movieId,
     nameRU,
     nameEN,
@@ -40,7 +41,7 @@ module.exports.createMovie = (req, res, next) => {
 // Удаление видео
 
 module.exports.deleteMovie = (req, res, next) => {
-  Movie.findOne({ movieId: req.params.movieId })
+  Movie.findOne({ _id: req.params.id })
     .then((movie) => {
       if (!movie) {
         throw new NotFoundError('Нет карточки с таким id');
@@ -51,7 +52,7 @@ module.exports.deleteMovie = (req, res, next) => {
       }
 
       Movie.findByIdAndDelete(movie._id)
-        .then((data) => {
+        .then(() => {
           res.send({ message: 'Карточка успешно удалена' });
         })
         .catch(next);

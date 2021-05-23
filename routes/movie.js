@@ -20,7 +20,7 @@ router.post('/movies', celebrate({
     image: Joi.string().uri().required(),
     trailer: Joi.string().uri().required(),
     thumbnail: Joi.string().uri().required(),
-    movieId: Joi.string().hex().length(24).required(),
+    movieId: Joi.number().integer().required(),
     nameRU: Joi.string().required(),
     nameEN: Joi.string().required(),
   }),
@@ -28,9 +28,9 @@ router.post('/movies', celebrate({
 
 // удаляет сохранённый фильм по id
 
-router.delete('/:movieId', celebrate({
+router.delete('/:id', celebrate({
   params: Joi.object().keys({
-    movieId: Joi.string().hex().length(24),
+    id: Joi.string().hex().length(24),
   }).unknown(true),
 }), movie.deleteMovie);
 

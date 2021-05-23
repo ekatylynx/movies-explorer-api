@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const NotFoundError = require('../errors/not-found-err');
 const DuplicateError = require('../errors/duplicate-err');
-const ForbiddenError = require('../errors/forbidden-err');
 
 const { JWT_SECRET = 'some-secret-key' } = process.env;
 
@@ -30,6 +29,8 @@ module.exports.createUser = (req, res, next) => {
     .catch((err) => {
       if (err.name === 'MongoError' || err.code === 11000) {
         throw new DuplicateError('Пользователь с таким email уже существует');
+      } else {
+        next(err);
       }
     })
     .catch(next);
@@ -58,11 +59,12 @@ module.exports.login = (req, res, next) => {
 
 // Обновить инфу о нас
 module.exports.updateUser = (req, res, next) => {
-  const { name } = req.body;
+  const { name, email } = req.body;
 
   // Чтобы обновлять одно из значений без null другого
   const objForUpdate = {};
   if (name) objForUpdate.name = name;
+  if (email) objForUpdate.email = email;
 
   User.findByIdAndUpdate(req.user._id, objForUpdate, { new: true })
     .then((user) => {
@@ -73,8 +75,11 @@ module.exports.updateUser = (req, res, next) => {
       res.status(200).send(user);
     })
     .catch((err) => {
-      if (err.name === 'CastError' || err.name === 'ValidationError') {
-        throw new ForbiddenError('Переданы некорректные данные');
+      if (err.name === 'MongoError' && err.codeName === 'DuplicateKey') {
+        throw new DuplicateError('Пользователь с таким email уже существует');
+      } else {
+        next(err);
+        // если нет совпадений в первом кетче идем в след мидлвейр
       }
     })
     .catch(next);

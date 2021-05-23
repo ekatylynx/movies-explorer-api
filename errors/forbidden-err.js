@@ -1,10 +1,9 @@
 class ForbiddenError extends Error {
   constructor(message) {
     super(message);
-    this.statusCode = 400;
+    this.statusCode = 403;
   }
 }
-// Ошибка 400, когда с запросом что-то не так;
-// Неправильно заполненные поля в запросе body
+// Ошибка 403, когда нет прав на удаление
 
 module.exports = ForbiddenError;
