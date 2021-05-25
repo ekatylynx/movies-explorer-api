@@ -9,7 +9,6 @@ const cors = require('cors');
 require('dotenv').config();
 
 const { requestLogger, errorLogger } = require('./middlewares/logger');
-const NotFoundError = require('./errors/not-found-err');
 const myErrors = require('./middlewares/errors');
 
 // Слушаем 3000 порт
@@ -46,10 +45,6 @@ app.use(helmet());
 // т.к все остальные роуты находящиеся в routes user / card будут доступны только при auth
 
 app.use('/', require('./routes'));
-
-app.use(() => {
-  throw new NotFoundError('Запрашиваемый ресурс не найден');
-});
 
 app.use(errorLogger); // подключаем логгер ошибок
 
