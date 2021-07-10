@@ -2,11 +2,12 @@ const mongoose = require('mongoose');
 const Movie = require('../models/movie');
 const NotFoundError = require('../errors/not-found-err');
 const ForbiddenError = require('../errors/forbidden-err');
+const DuplicateError = require('../errors/duplicate-err');
 
 // Получение всех видео
 
 module.exports.getMovies = (req, res, next) => {
-  Movie.find({})
+  Movie.find({ owner: mongoose.Types.ObjectId(req.user._id) })
     .sort({ createdAt: -1 })
     .then((movies) => res.send(movies))
     .catch(next);
@@ -20,21 +21,30 @@ module.exports.createMovie = (req, res, next) => {
     movieId, nameRU, nameEN,
   } = req.body;
 
-  Movie.create({
-    country,
-    director,
-    duration,
-    year,
-    description,
-    image,
-    trailer,
-    thumbnail,
-    owner: mongoose.Types.ObjectId(req.user._id), // используем req.user
-    movieId,
-    nameRU,
-    nameEN,
-  })
-    .then((movie) => res.send(movie))
+
+  Movie.find({ movieId, owner: mongoose.Types.ObjectId(req.user._id) })
+    .then((movie) => {
+      if (movie.length > 0) {
+        throw new DuplicateError('Вы уже сохранили этот фильм');
+      } else {
+        Movie.create({
+          country,
+          director,
+          duration,
+          year,
+          description,
+          image,
+          trailer,
+          thumbnail,
+          owner: mongoose.Types.ObjectId(req.user._id), // используем req.user
+          movieId,
+          nameRU,
+          nameEN,
+        })
+          .then((movie) => res.send(movie))
+          .catch(next);
+      }
+    })
     .catch(next);
 };
 
